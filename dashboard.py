@@ -27,13 +27,12 @@ html, body, .stApp {
     font-family: 'DM Sans', sans-serif;
 }
 
-header[data-testid="stHeader"] {
-    display: none !important;
-}
-
-#root > div:first-child {
-    margin-top: 0 !important;
-}
+header[data-testid="stHeader"] { display: none !important; }
+div[data-testid="stToolbar"] { display: none !important; }
+div[data-testid="stDecoration"] { display: none !important; }
+div[data-testid="stStatusWidget"] { display: none !important; }
+#MainMenu { display: none !important; }
+footer { display: none !important; }
 
 .block-container {
     padding: 0 !important;
@@ -55,15 +54,9 @@ header[data-testid="stHeader"] {
     gap: 14px;
 }
 
-.logo-svg {
-    width: 42px;
-    height: 42px;
-}
+.logo-svg { width: 42px; height: 42px; }
 
-.brand-text {
-    display: flex;
-    flex-direction: column;
-}
+.brand-text { display: flex; flex-direction: column; }
 
 .brand-name {
     font-family: 'Rajdhani', sans-serif;
@@ -92,9 +85,7 @@ header[data-testid="stHeader"] {
     text-transform: uppercase;
 }
 
-.main-panel {
-    padding: 20px 32px;
-}
+.main-panel { padding: 20px 32px; }
 
 .input-section {
     background: #0d1f2d;
@@ -102,15 +93,6 @@ header[data-testid="stHeader"] {
     border-radius: 10px;
     padding: 20px 32px;
     margin-bottom: 16px;
-}
-
-.input-label {
-    font-size: 10px;
-    font-weight: 500;
-    color: #4a7a9b;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 5px;
 }
 
 .results-panel {
@@ -125,10 +107,6 @@ header[data-testid="stHeader"] {
     grid-template-columns: 280px 1fr;
     gap: 32px;
     align-items: center;
-}
-
-.company-info {
-    margin-bottom: 20px;
 }
 
 .company-detail {
@@ -212,13 +190,6 @@ header[data-testid="stHeader"] {
 .ipo-box { border-color: #4a3a1a; }
 .ipo-box .metric-icon-label { color: #e0a050; }
 .ipo-box .metric-num { color: #e0a050; }
-
-.quotes-section {
-    margin-top: 20px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
 
 .quotes-title {
     font-size: 11px;
@@ -434,7 +405,7 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
     <div class="results-panel">
         <div class="results-grid">
             <div>
-                <div class="company-info">
+                <div style="margin-bottom:20px">
                     <div class="company-detail">Ticker: <span>{ticker_val or '—'}</span></div>
                     <div class="company-detail">English Name: <span>{company_name}</span></div>
                     <div class="company-detail">Local Name: <span>{company_zh_val or '—'}</span></div>
@@ -472,7 +443,6 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
         st.plotly_chart(make_gauge(score, score_color), use_container_width=True)
 
     col_bull, col_bear = st.columns(2)
-
     with col_bull:
         st.markdown('<div class="quotes-title" style="color:#4caf7d">Top Bullish Signals</div>', unsafe_allow_html=True)
         ipo_bullish = [p for p in bullish if p.get('relevance_tag') == 'ipo_related']
@@ -515,9 +485,6 @@ st.markdown(f"""
 
 tab1, tab2 = st.tabs(["LIVE SCAN", "BACKTEST"])
 
-# ══════════════════════════════════════════════════════════════════════
-# TAB 1: LIVE SCAN
-# ══════════════════════════════════════════════════════════════════════
 with tab1:
     st.markdown('<div class="main-panel">', unsafe_allow_html=True)
     st.markdown('<div class="input-section">', unsafe_allow_html=True)
@@ -547,14 +514,12 @@ with tab1:
             st.error("Please enter a company name.")
         else:
             company_clean = company_en.strip()
-
             with st.spinner(f"Collecting posts for {company_clean}..."):
                 clear_company(company_clean)
                 import asyncio
                 from collector_playwright import run_all as playwright_run
                 sources = get_sources_for_region(region)
                 asyncio.run(playwright_run(company_clean, company_zh, ticker, region, sources))
-
                 if region == "HK":
                     subprocess.run([sys.executable, "collector_lihkg.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
@@ -564,7 +529,6 @@ with tab1:
                 if region == "TW":
                     subprocess.run([sys.executable, "collector_ptt.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
-
                 subprocess.run([sys.executable, "collector_youtube.py"],
                     input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n{region}\n", text=True)
 
@@ -592,9 +556,6 @@ with tab1:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════
-# TAB 2: BACKTEST
-# ══════════════════════════════════════════════════════════════════════
 with tab2:
     st.markdown('<div class="main-panel">', unsafe_allow_html=True)
     st.markdown('<div class="input-section">', unsafe_allow_html=True)
@@ -622,7 +583,6 @@ with tab2:
             st.error("Please enter a company name.")
         else:
             bt_clean = bt_company.strip()
-
             with st.spinner("Collecting historical data..."):
                 clear_company(bt_clean)
                 import asyncio
@@ -631,11 +591,9 @@ with tab2:
                 asyncio.run(playwright_run(bt_clean, bt_zh, bt_ticker, bt_region, sources))
                 subprocess.run([sys.executable, "collector_youtube.py"],
                     input=f"{bt_clean}\n{bt_zh or ''}\n{bt_ticker or ''}\n{bt_region}\n", text=True)
-
             with st.spinner("Scoring sentiment..."):
                 from sentiment import run_sentiment
                 run_sentiment(bt_clean)
-
             bt_data = fetch_results(bt_clean)
             scored = [p for p in bt_data if p.get('sentiment_label')]
             if scored:
