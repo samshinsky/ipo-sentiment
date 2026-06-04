@@ -27,12 +27,19 @@ html, body, .stApp {
     font-family: 'DM Sans', sans-serif;
 }
 
+header[data-testid="stHeader"] {
+    display: none !important;
+}
+
+#root > div:first-child {
+    margin-top: 0 !important;
+}
+
 .block-container {
     padding: 0 !important;
     max-width: 100% !important;
 }
 
-/* ── HEADER ── */
 .header {
     background: linear-gradient(135deg, #0d1f2d 0%, #0b1a27 50%, #0d1f2d 100%);
     border-bottom: 2px solid #c97b3a;
@@ -85,25 +92,16 @@ html, body, .stApp {
     text-transform: uppercase;
 }
 
-/* ── MAIN PANEL ── */
 .main-panel {
     padding: 20px 32px;
 }
 
-/* ── INPUT SECTION ── */
 .input-section {
     background: #0d1f2d;
     border: 1px solid #1a3347;
     border-radius: 10px;
-    padding: 20px 24px;
+    padding: 20px 32px;
     margin-bottom: 16px;
-}
-
-.input-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 14px;
 }
 
 .input-label {
@@ -115,12 +113,11 @@ html, body, .stApp {
     margin-bottom: 5px;
 }
 
-/* ── RESULTS SECTION ── */
 .results-panel {
     background: #0d1f2d;
     border: 1px solid #1a3347;
     border-radius: 10px;
-    padding: 24px;
+    padding: 24px 32px;
 }
 
 .results-grid {
@@ -143,10 +140,6 @@ html, body, .stApp {
 .company-detail span {
     color: #e8f0f7;
     font-weight: 500;
-}
-
-.gauge-area {
-    text-align: center;
 }
 
 .score-big {
@@ -220,7 +213,6 @@ html, body, .stApp {
 .ipo-box .metric-icon-label { color: #e0a050; }
 .ipo-box .metric-num { color: #e0a050; }
 
-/* ── QUOTES ── */
 .quotes-section {
     margin-top: 20px;
     display: grid;
@@ -255,7 +247,6 @@ html, body, .stApp {
     letter-spacing: 0.08em;
 }
 
-/* ── TABS ── */
 .stTabs [data-baseweb="tab-list"] {
     background: transparent !important;
     gap: 4px;
@@ -281,7 +272,6 @@ html, body, .stApp {
     border-bottom-color: #4ecdc4 !important;
 }
 
-/* ── STREAMLIT OVERRIDES ── */
 .stTextInput input {
     background: #0b1724 !important;
     border: 1px solid #1a3347 !important;
@@ -323,32 +313,14 @@ div[data-testid="stButton"] button {
     text-transform: uppercase !important;
     width: 100% !important;
     padding: 10px !important;
-    transition: all 0.2s !important;
 }
 
 div[data-testid="stButton"] button:hover {
     background: linear-gradient(135deg, #5eddd4, #3aada4) !important;
-    transform: translateY(-1px) !important;
-}
-
-.stRadio > div {
-    flex-direction: row !important;
-    gap: 8px !important;
-}
-
-.stRadio label {
-    background: #0b1724 !important;
-    border: 1px solid #1a3347 !important;
-    border-radius: 6px !important;
-    padding: 6px 14px !important;
-    color: #7a9bb5 !important;
-    font-size: 12px !important;
-    cursor: pointer !important;
 }
 
 .stSpinner > div { border-top-color: #4ecdc4 !important; }
 
-/* Gauge animation */
 @keyframes gaugeIn {
     from { opacity: 0; transform: scale(0.8); }
     to { opacity: 1; transform: scale(1); }
@@ -357,7 +329,6 @@ div[data-testid="stButton"] button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-# ── LOGO SVG ──
 LOGO_SVG = """<svg viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo-svg">
   <polygon points="4,21 16,8 16,16 28,8 28,16 38,8 38,14 24,24 24,16 12,24 12,16" fill="#ffffff" opacity="0.9"/>
   <polygon points="4,27 16,14 16,22 28,14 28,22 38,14 38,20 24,30 24,22 12,30 12,22" fill="#4ecdc4" opacity="0.8"/>
@@ -458,7 +429,6 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
     bearish = [p for p in scored_data if p['sentiment_label'] == 'bearish']
     neutral = [p for p in scored_data if p['sentiment_label'] == 'neutral']
     ipo_rel = [p for p in scored_data if p.get('relevance_tag') == 'ipo_related']
-    total = len(scored_data)
 
     st.markdown(f"""
     <div class="results-panel">
@@ -497,24 +467,14 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
     </div>
     """, unsafe_allow_html=True)
 
-    # Add gauge chart
     col_gauge, col_spacer = st.columns([1, 3])
     with col_gauge:
         st.plotly_chart(make_gauge(score, score_color), use_container_width=True)
 
-    # Quote highlights
-    st.markdown(f"""<div class="quotes-section">
-        <div>
-            <div class="quotes-title" style="color:#4caf7d">Top Bullish Signals</div>
-        </div>
-        <div>
-            <div class="quotes-title" style="color:#e05c5c">Top Bearish Signals</div>
-        </div>
-    </div>""", unsafe_allow_html=True)
-
     col_bull, col_bear = st.columns(2)
 
     with col_bull:
+        st.markdown('<div class="quotes-title" style="color:#4caf7d">Top Bullish Signals</div>', unsafe_allow_html=True)
         ipo_bullish = [p for p in bullish if p.get('relevance_tag') == 'ipo_related']
         top_bullish = sorted(ipo_bullish or bullish, key=lambda x: float(x.get('sentiment_score') or 0), reverse=True)[:3]
         for p in top_bullish:
@@ -527,6 +487,7 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
             </div>""", unsafe_allow_html=True)
 
     with col_bear:
+        st.markdown('<div class="quotes-title" style="color:#e05c5c">Top Bearish Signals</div>', unsafe_allow_html=True)
         ipo_bearish = [p for p in bearish if p.get('relevance_tag') == 'ipo_related']
         top_bearish = sorted(ipo_bearish or bearish, key=lambda x: float(x.get('sentiment_score') or 0))[:3]
         for p in top_bearish:
@@ -538,9 +499,7 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
                 <div class="quote-source">{source} · {relevance}</div>
             </div>""", unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════
-# HEADER
-# ══════════════════════════════════════════════════════════════════════
+# ── HEADER ───────────────────────────────────────────────────────────
 st.markdown(f"""
 <div class="header">
     <div class="logo-area">
@@ -554,11 +513,11 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════
-# TABS
-# ══════════════════════════════════════════════════════════════════════
 tab1, tab2 = st.tabs(["LIVE SCAN", "BACKTEST"])
 
+# ══════════════════════════════════════════════════════════════════════
+# TAB 1: LIVE SCAN
+# ══════════════════════════════════════════════════════════════════════
 with tab1:
     st.markdown('<div class="main-panel">', unsafe_allow_html=True)
     st.markdown('<div class="input-section">', unsafe_allow_html=True)
