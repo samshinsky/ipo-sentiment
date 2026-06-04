@@ -534,15 +534,25 @@ with tab1:
                 from collector_playwright import run_all as playwright_run
                 sources = get_sources_for_region(region)
                 asyncio.run(playwright_run(company_clean, company_zh, ticker, region, sources))
+
                 if region == "HK":
                     subprocess.run([sys.executable, "collector_lihkg.py"],
+                        input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+                    subprocess.run([sys.executable, "collector_aastocks.py"],
+                        input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+                    subprocess.run([sys.executable, "collector_xiaohongshu.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
                 if region == "KR":
                     subprocess.run([sys.executable, "collector_naver.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+                    subprocess.run([sys.executable, "collector_cafestock.py"],
+                        input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
                 if region == "TW":
                     subprocess.run([sys.executable, "collector_ptt.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+                    subprocess.run([sys.executable, "collector_dcard.py"],
+                        input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+
                 subprocess.run([sys.executable, "collector_youtube.py"],
                     input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n{region}\n", text=True)
 
