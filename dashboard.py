@@ -134,12 +134,6 @@ st.markdown("""
     .stTabs [aria-selected="true"] {
         color: #c9a84c !important;
     }
-    div[data-baseweb="radio"] label {
-        color: #888 !important;
-    }
-    div[data-baseweb="radio"] [data-checked="true"] + div {
-        color: #c9a84c !important;
-    }
     .stTextInput input {
         background: #0f0f1a !important;
         border: 1px solid #1e1e2e !important;
@@ -216,6 +210,17 @@ def fetch_results(company_en):
     result = supabase.table("posts").select("*").eq("company", company_en).execute()
     return result.data
 
+def get_sources_for_region(region):
+    if region == "HK":
+        return ["eastmoney", "bilibili", "36kr", "stockfeel", "mobile01", "google_trends"]
+    elif region == "JP":
+        return ["yahoo_japan", "minkabu", "36kr", "google_trends"]
+    elif region == "KR":
+        return ["eastmoney", "google_trends"]
+    elif region == "TW":
+        return ["stockfeel", "mobile01", "eastmoney", "google_trends"]
+    return ["eastmoney", "google_trends"]
+
 def display_results(scored_data, company_name):
     score = calculate_retail_score(scored_data)
     signal, signal_color = get_signal(score)
@@ -264,14 +269,13 @@ def display_results(scored_data, company_name):
                 <div class="metric-label">IPO-related</div>
             </div>""", unsafe_allow_html=True)
 
-        # Source breakdown chart — sorted correctly
         sources = {}
         for p in scored_data:
             s = p.get('source', 'unknown')
             sources[s] = sources.get(s, 0) + 1
-        
+
         sorted_sources = sorted(sources.items(), key=lambda x: x[1])
-        
+
         fig = go.Figure(go.Bar(
             x=[v for _, v in sorted_sources],
             y=[k for k, _ in sorted_sources],
@@ -296,24 +300,28 @@ def display_results(scored_data, company_name):
     col_bull_q, col_bear_q = st.columns(2)
     with col_bull_q:
         st.markdown("**Top Bullish Signals**")
-        top_bullish = sorted(bullish, key=lambda x: float(x.get('sentiment_score') or 0), reverse=True)[:3]
+        ipo_bullish = [p for p in bullish if p.get('relevance_tag') == 'ipo_related']
+        top_bullish = sorted(ipo_bullish or bullish, key=lambda x: float(x.get('sentiment_score') or 0), reverse=True)[:3]
         for p in top_bullish:
             text = (p.get('body') or p.get('title') or '')[:250]
             source = p.get('source', '')
+            relevance = p.get('relevance_tag', '')
             st.markdown(f"""<div class="quote-card" style="border-color: #2ecc71">
                 {text}
-                <div class="quote-meta">{source}</div>
+                <div class="quote-meta">{source} · {relevance}</div>
             </div>""", unsafe_allow_html=True)
 
     with col_bear_q:
         st.markdown("**Top Bearish Signals**")
-        top_bearish = sorted(bearish, key=lambda x: float(x.get('sentiment_score') or 0))[:3]
+        ipo_bearish = [p for p in bearish if p.get('relevance_tag') == 'ipo_related']
+        top_bearish = sorted(ipo_bearish or bearish, key=lambda x: float(x.get('sentiment_score') or 0))[:3]
         for p in top_bearish:
             text = (p.get('body') or p.get('title') or '')[:250]
             source = p.get('source', '')
+            relevance = p.get('relevance_tag', '')
             st.markdown(f"""<div class="quote-card" style="border-color: #e74c3c">
                 {text}
-                <div class="quote-meta">{source}</div>
+                <div class="quote-meta">{source} · {relevance}</div>
             </div>""", unsafe_allow_html=True)
 
 # ── HEADER ───────────────────────────────────────────────────────────
@@ -334,11 +342,11 @@ tab1, tab2 = st.tabs(["LIVE SCAN", "BACKTEST"])
 with tab1:
     col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
     with col1:
-        company_en = st.text_input("Company name (English)", placeholder="e.g. Mixue")
+        company_en = st.text_input("Company name (English)", placeholder="e.g. LongBio Pharma")
     with col2:
-        company_zh = st.text_input("Local name", placeholder="e.g. 蜜雪冰城")
+        company_zh = st.text_input("Local name", placeholder="e.g. 朗迈生物")
     with col3:
-        ticker = st.text_input("Ticker", placeholder="e.g. 2097")
+        ticker = st.text_input("Ticker", placeholder="e.g. 2760")
     with col4:
         region = st.selectbox("Region", ["HK", "JP", "KR", "TW"])
 
@@ -358,8 +366,7 @@ with tab1:
 
                 import asyncio
                 from collector_playwright import run_all as playwright_run
-                sources = ["eastmoney", "bilibili", "36kr", "yahoo_japan",
-                           "minkabu", "stockfeel", "mobile01", "google_trends"]
+                sources = get_sources_for_region(region)
                 asyncio.run(playwright_run(company_clean, company_zh, ticker, region, sources))
 
                 if region == "HK":
@@ -379,14 +386,15 @@ with tab1:
                 from sentiment import run_sentiment
                 run_sentiment(company_clean)
 
+            st.session_state['last_company'] = company_clean
             st.rerun()
 
-    # Results
-    if company_en:
-        data = fetch_results(company_en.strip())
+    # Results — only show if scan was just run
+    if 'last_company' in st.session_state:
+        data = fetch_results(st.session_state['last_company'])
         scored_data = [p for p in data if p.get('sentiment_label')]
         if scored_data:
-            display_results(scored_data, company_en.strip())
+            display_results(scored_data, st.session_state['last_company'])
 
 # ══════════════════════════════════════════════════════════════════════
 # TAB 2: BACKTEST
@@ -397,13 +405,13 @@ with tab2:
 
     bt_col1, bt_col2, bt_col3 = st.columns([3, 2, 2])
     with bt_col1:
-        bt_company = st.text_input("Company name", placeholder="e.g. BubbleMart", key="bt_company")
+        bt_company = st.text_input("Company name", placeholder="e.g. Mixue", key="bt_company")
     with bt_col2:
         bt_ipo_date = st.date_input("IPO listing date", key="bt_date")
     with bt_col3:
         bt_region = st.selectbox("Region", ["HK", "JP", "KR", "TW"], key="bt_region")
 
-    bt_zh = st.text_input("Local name (optional)", placeholder="e.g. 泡泡瑪特", key="bt_zh")
+    bt_zh = st.text_input("Local name (optional)", placeholder="e.g. 蜜雪冰城", key="bt_zh")
     bt_ticker = st.text_input("Ticker (optional)", key="bt_ticker")
     bt_window = st.radio("Days before IPO", [7, 30, 60, 90], horizontal=True,
                          key="bt_window", format_func=lambda x: f"{x}d")
@@ -421,13 +429,16 @@ with tab2:
                 clear_company(bt_clean)
                 import asyncio
                 from collector_playwright import run_all as playwright_run
-                asyncio.run(playwright_run(bt_clean, bt_zh, bt_ticker, bt_region, None))
+                sources = get_sources_for_region(bt_region)
+                asyncio.run(playwright_run(bt_clean, bt_zh, bt_ticker, bt_region, sources))
                 subprocess.run([sys.executable, "collector_youtube.py"],
                     input=f"{bt_clean}\n{bt_zh or ''}\n{bt_ticker or ''}\n{bt_region}\n", text=True)
 
             with st.spinner("Scoring sentiment..."):
                 from sentiment import run_sentiment
                 run_sentiment(bt_clean)
+
+            st.session_state['last_bt_company'] = bt_clean
 
             bt_data = fetch_results(bt_clean)
             scored = [p for p in bt_data if p.get('sentiment_label')]
