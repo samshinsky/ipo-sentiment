@@ -40,10 +40,18 @@ footer { display: none !important; }
 }
 
 div[data-testid="stMainBlockContainer"] {
+    padding: 0 !important;
+    max-width: 100% !important;
+}
+
+div[data-testid="stAppViewContainer"] > section {
     padding-left: 0 !important;
     padding-right: 0 !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
+}
+
+div[data-testid="stAppViewBlockContainer"] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
     max-width: 100% !important;
 }
 
