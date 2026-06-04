@@ -20,7 +20,7 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { box-sizing: border-box; }
 
 html, body, .stApp {
     background: #0b1724 !important;
@@ -34,50 +34,24 @@ div[data-testid="stStatusWidget"] { display: none !important; }
 #MainMenu { display: none !important; }
 footer { display: none !important; }
 
-.block-container {
-    padding: 0 !important;
-    max-width: 100% !important;
-}
-
-div[data-testid="stMainBlockContainer"] {
-    padding: 0 !important;
-    max-width: 100% !important;
-}
-
-div[data-testid="stAppViewContainer"] > section {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-}
-
-div[data-testid="stAppViewBlockContainer"] {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    max-width: 100% !important;
-}
-
 div[data-testid="stTabsContent"] {
     border: none !important;
-    padding: 0 !important;
     background: transparent !important;
 }
 
 div[data-baseweb="tab-panel"] {
     border: none !important;
-    padding: 0 !important;
     background: transparent !important;
-}
-
-div[data-testid="stVerticalBlock"] {
-    gap: 0 !important;
 }
 
 .header {
     background: linear-gradient(135deg, #0d1f2d 0%, #0b1a27 50%, #0d1f2d 100%);
     border-bottom: 2px solid #c97b3a;
-    padding: 14px 48px;
+    padding: 14px 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin: -6rem -4rem 0 -4rem;
 }
 
 .logo-area {
@@ -116,7 +90,7 @@ div[data-testid="stVerticalBlock"] {
     text-transform: uppercase;
 }
 
-.main-panel { padding: 20px 48px; }
+.main-panel { padding: 20px 0; }
 
 .input-section {
     background: #0d1f2d;
@@ -252,8 +226,9 @@ div[data-testid="stVerticalBlock"] {
 .stTabs [data-baseweb="tab-list"] {
     background: transparent !important;
     gap: 4px;
-    padding: 0 48px;
     border-bottom: 1px solid #1a3347;
+    margin: 0 -4rem;
+    padding: 0 4rem;
 }
 
 .stTabs [data-baseweb="tab"] {
