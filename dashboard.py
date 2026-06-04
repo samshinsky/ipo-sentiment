@@ -36,12 +36,20 @@ footer { display: none !important; }
 
 div[data-testid="stTabsContent"] {
     border: none !important;
+    box-shadow: none !important;
+    padding-top: 0 !important;
     background: transparent !important;
 }
 
 div[data-baseweb="tab-panel"] {
     border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
     background: transparent !important;
+}
+
+div[data-baseweb="tab-border"] {
+    display: none !important;
 }
 
 .header {
