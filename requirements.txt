@@ -1,0 +1,14 @@
+streamlit
+plotly
+supabase
+anthropic
+google-genai
+google-generativeai
+httpx
+requests
+beautifulsoup4
+playwright
+telethon
+google-api-python-client
+pytrends
+pandas
