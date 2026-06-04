@@ -39,6 +39,30 @@ footer { display: none !important; }
     max-width: 100% !important;
 }
 
+div[data-testid="stMainBlockContainer"] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    max-width: 100% !important;
+}
+
+div[data-testid="stTabsContent"] {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+div[data-baseweb="tab-panel"] {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+div[data-testid="stVerticalBlock"] {
+    gap: 0 !important;
+}
+
 .header {
     background: linear-gradient(135deg, #0d1f2d 0%, #0b1a27 50%, #0d1f2d 100%);
     border-bottom: 2px solid #c97b3a;
@@ -55,7 +79,6 @@ footer { display: none !important; }
 }
 
 .logo-svg { width: 42px; height: 42px; }
-
 .brand-text { display: flex; flex-direction: column; }
 
 .brand-name {
@@ -91,7 +114,7 @@ footer { display: none !important; }
     background: #0d1f2d;
     border: 1px solid #1a3347;
     border-radius: 10px;
-    padding: 20px 48px;
+    padding: 20px 24px;
     margin-bottom: 16px;
 }
 
@@ -99,7 +122,7 @@ footer { display: none !important; }
     background: #0d1f2d;
     border: 1px solid #1a3347;
     border-radius: 10px;
-    padding: 24px 48px;
+    padding: 24px;
 }
 
 .results-grid {
