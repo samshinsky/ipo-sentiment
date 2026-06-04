@@ -42,7 +42,7 @@ footer { display: none !important; }
 .header {
     background: linear-gradient(135deg, #0d1f2d 0%, #0b1a27 50%, #0d1f2d 100%);
     border-bottom: 2px solid #c97b3a;
-    padding: 14px 32px;
+    padding: 14px 48px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -85,13 +85,13 @@ footer { display: none !important; }
     text-transform: uppercase;
 }
 
-.main-panel { padding: 20px 32px; }
+.main-panel { padding: 20px 48px; }
 
 .input-section {
     background: #0d1f2d;
     border: 1px solid #1a3347;
     border-radius: 10px;
-    padding: 20px 32px;
+    padding: 20px 48px;
     margin-bottom: 16px;
 }
 
@@ -99,7 +99,7 @@ footer { display: none !important; }
     background: #0d1f2d;
     border: 1px solid #1a3347;
     border-radius: 10px;
-    padding: 24px 32px;
+    padding: 24px 48px;
 }
 
 .results-grid {
@@ -221,7 +221,7 @@ footer { display: none !important; }
 .stTabs [data-baseweb="tab-list"] {
     background: transparent !important;
     gap: 4px;
-    padding: 0 32px;
+    padding: 0 48px;
     border-bottom: 1px solid #1a3347;
 }
 
