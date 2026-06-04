@@ -1,48 +1,25 @@
 import asyncio
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
-import supabase as supabase_
+from supabase import create_client
 from datetime import datetime, timezone
 import config
 import json
 import os
 
-supabase = supabase_.create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
-COOKIES_FILE = "dcard_cookies.json"
-
-async def save_cookies(context):
-    cookies = await context.cookies()
-    with open(COOKIES_FILE, 'w') as f:
-        json.dump(cookies, f)
-    print("Dcard cookies saved.")
+supabase = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
+COOKIES_FILE = "xiaohongshu_cookies.json"
 
 async def load_cookies(context):
     if os.path.exists(COOKIES_FILE):
         with open(COOKIES_FILE, 'r') as f:
             cookies = json.load(f)
         await context.add_cookies(cookies)
-        print("Dcard cookies loaded.")
+        print("Xiaohongshu cookies loaded.")
         return True
     return False
 
-async def login_dcard(page, context):
-    print("Logging into Dcard...")
-    await page.goto("https://www.dcard.tw/login")
-    await page.wait_for_timeout(3000)
-    
-    try:
-        await page.fill('input[type="email"]', 'sambshinsky1@gmail.com')
-        await page.fill('input[type="password"]', 'HEIDI123heidi')
-        await page.click('button[type="submit"]')
-        await page.wait_for_timeout(4000)
-        await save_cookies(context)
-        print("Dcard login successful")
-        return True
-    except Exception as e:
-        print(f"Dcard login failed: {e}")
-        return False
-
-async def scrape_dcard(company_en, company_zh, ticker, days_back=30):
+async def scrape_xiaohongshu(company_en, company_zh, ticker, days_back=30):
     posts = []
     
     async with async_playwright() as p:
@@ -55,47 +32,45 @@ async def scrape_dcard(company_en, company_zh, ticker, days_back=30):
         )
         page = await context.new_page()
         await Stealth().apply_stealth_async(page)
+        await load_cookies(context)
         
-        cookies_loaded = await load_cookies(context)
-        
-        if not cookies_loaded:
-            logged_in = await login_dcard(page, context)
-            if not logged_in:
-                await browser.close()
-                return []
-        
-        queries = [company_en, ticker]
+        queries = [company_en]
         if company_zh:
             queries.append(company_zh)
+        if ticker:
+            queries.append(ticker)
         
         for query in queries:
             if not query:
                 continue
-            print(f"Searching Dcard for: {query}")
+            print(f"Searching Xiaohongshu for: {query}")
             
-            await page.goto(f"https://www.dcard.tw/search?query={query}")
-            await page.wait_for_timeout(3000)
+            await page.goto(f"https://www.xiaohongshu.com/search_result?keyword={query}&type=51")
+            await page.wait_for_timeout(4000)
             
             try:
-                items = await page.query_selector_all('article')
+                items = await page.query_selector_all('section.note-item, .feeds-page .note-item, [class*="note-item"]')
+                
+                if not items:
+                    items = await page.query_selector_all('a[href*="/explore/"]')
                 
                 for item in items[:15]:
                     try:
-                        title_el = await item.query_selector('h2, h3')
-                        body_el = await item.query_selector('p')
+                        title_el = await item.query_selector('a[title], .title, span')
+                        body_el = await item.query_selector('p, .desc')
                         link_el = await item.query_selector('a')
                         
                         title = await title_el.inner_text() if title_el else ""
                         body = await body_el.inner_text() if body_el else ""
                         href = await link_el.get_attribute('href') if link_el else ""
-                        url = f"https://www.dcard.tw{href}" if href else ""
+                        url = f"https://www.xiaohongshu.com{href}" if href and href.startswith('/') else href
                         
-                        if not title:
+                        if not title and not body:
                             continue
                         
                         posts.append({
-                            "source": "dcard",
-                            "region": "TW",
+                            "source": "xiaohongshu",
+                            "region": "HK",
                             "language": "zh",
                             "company": company_en,
                             "title": title.strip(),
@@ -104,7 +79,7 @@ async def scrape_dcard(company_en, company_zh, ticker, days_back=30):
                             "author": "",
                             "posted_at": datetime.now(timezone.utc).isoformat(),
                             "collected_at": datetime.now(timezone.utc).isoformat(),
-                            "source_weight": config.SOURCE_WEIGHTS.get("dcard", 1.0),
+                            "source_weight": config.SOURCE_WEIGHTS.get("xiaohongshu", 0.8),
                             "sentiment_score": None,
                             "sentiment_label": None,
                             "keywords": [],
@@ -114,11 +89,11 @@ async def scrape_dcard(company_en, company_zh, ticker, days_back=30):
                     except:
                         continue
             except Exception as e:
-                print(f"Error scraping Dcard: {e}")
+                print(f"Error scraping Xiaohongshu: {e}")
         
         await browser.close()
     
-    print(f"Dcard collected {len(posts)} posts")
+    print(f"Xiaohongshu collected {len(posts)} posts")
     
     if posts:
         supabase.table("posts").insert(posts).execute()
@@ -129,4 +104,4 @@ if __name__ == "__main__":
     company_en = input("Company name (English): ")
     company_zh = input("Local name: ")
     ticker = input("Ticker: ")
-    asyncio.run(scrape_dcard(company_en, company_zh, ticker))
+    asyncio.run(scrape_xiaohongshu(company_en, company_zh, ticker))

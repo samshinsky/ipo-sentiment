@@ -1,48 +1,41 @@
 import asyncio
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
-import supabase as supabase_
+from supabase import create_client
 from datetime import datetime, timezone
 import config
 import json
 import os
 
-supabase = supabase_.create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
-COOKIES_FILE = "dcard_cookies.json"
+supabase = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
+COOKIES_FILE = "aastocks_cookies.json"
 
 async def save_cookies(context):
     cookies = await context.cookies()
     with open(COOKIES_FILE, 'w') as f:
         json.dump(cookies, f)
-    print("Dcard cookies saved.")
+    print("AAStocks cookies saved.")
 
 async def load_cookies(context):
     if os.path.exists(COOKIES_FILE):
         with open(COOKIES_FILE, 'r') as f:
             cookies = json.load(f)
         await context.add_cookies(cookies)
-        print("Dcard cookies loaded.")
+        print("AAStocks cookies loaded.")
         return True
     return False
 
-async def login_dcard(page, context):
-    print("Logging into Dcard...")
-    await page.goto("https://www.dcard.tw/login")
-    await page.wait_for_timeout(3000)
-    
-    try:
-        await page.fill('input[type="email"]', 'sambshinsky1@gmail.com')
-        await page.fill('input[type="password"]', 'HEIDI123heidi')
-        await page.click('button[type="submit"]')
-        await page.wait_for_timeout(4000)
-        await save_cookies(context)
-        print("Dcard login successful")
-        return True
-    except Exception as e:
-        print(f"Dcard login failed: {e}")
-        return False
+async def login_aastocks(page, context):
+    print("Logging into AAStocks...")
+    await page.goto("https://logon.aastocks.com/mainsite/en/login.aspx")
+    await page.wait_for_timeout(2000)
+    print("Please log in manually in the browser window, then press Enter here...")
+    input()
+    await save_cookies(context)
+    print("AAStocks cookies saved.")
+    return True
 
-async def scrape_dcard(company_en, company_zh, ticker, days_back=30):
+async def scrape_aastocks(company_en, company_zh, ticker, days_back=30):
     posts = []
     
     async with async_playwright() as p:
@@ -57,9 +50,8 @@ async def scrape_dcard(company_en, company_zh, ticker, days_back=30):
         await Stealth().apply_stealth_async(page)
         
         cookies_loaded = await load_cookies(context)
-        
         if not cookies_loaded:
-            logged_in = await login_dcard(page, context)
+            logged_in = await login_aastocks(page, context)
             if not logged_in:
                 await browser.close()
                 return []
@@ -71,40 +63,39 @@ async def scrape_dcard(company_en, company_zh, ticker, days_back=30):
         for query in queries:
             if not query:
                 continue
-            print(f"Searching Dcard for: {query}")
+            print(f"Searching AAStocks for: {query}")
             
-            await page.goto(f"https://www.dcard.tw/search?query={query}")
+            search_url = f"https://www.aastocks.com/en/stocks/analysis/analytic/search.aspx?q={query}"
+            await page.goto(search_url)
             await page.wait_for_timeout(3000)
             
             try:
-                items = await page.query_selector_all('article')
+                items = await page.query_selector_all('.news-item, .article-item, tr')
                 
-                for item in items[:15]:
+                for item in items[:20]:
                     try:
-                        title_el = await item.query_selector('h2, h3')
-                        body_el = await item.query_selector('p')
-                        link_el = await item.query_selector('a')
+                        title_el = await item.query_selector('a, .title')
+                        if not title_el:
+                            continue
+                        title = await title_el.inner_text()
+                        href = await title_el.get_attribute('href') or ""
+                        url = f"https://www.aastocks.com{href}" if href.startswith('/') else href
                         
-                        title = await title_el.inner_text() if title_el else ""
-                        body = await body_el.inner_text() if body_el else ""
-                        href = await link_el.get_attribute('href') if link_el else ""
-                        url = f"https://www.dcard.tw{href}" if href else ""
-                        
-                        if not title:
+                        if not title or len(title.strip()) < 5:
                             continue
                         
                         posts.append({
-                            "source": "dcard",
-                            "region": "TW",
+                            "source": "aastocks",
+                            "region": "HK",
                             "language": "zh",
                             "company": company_en,
                             "title": title.strip(),
-                            "body": body.strip(),
+                            "body": title.strip(),
                             "url": url,
                             "author": "",
                             "posted_at": datetime.now(timezone.utc).isoformat(),
                             "collected_at": datetime.now(timezone.utc).isoformat(),
-                            "source_weight": config.SOURCE_WEIGHTS.get("dcard", 1.0),
+                            "source_weight": config.SOURCE_WEIGHTS.get("aastocks", 0.9),
                             "sentiment_score": None,
                             "sentiment_label": None,
                             "keywords": [],
@@ -114,11 +105,11 @@ async def scrape_dcard(company_en, company_zh, ticker, days_back=30):
                     except:
                         continue
             except Exception as e:
-                print(f"Error scraping Dcard: {e}")
+                print(f"Error scraping AAStocks: {e}")
         
         await browser.close()
     
-    print(f"Dcard collected {len(posts)} posts")
+    print(f"AAStocks collected {len(posts)} posts")
     
     if posts:
         supabase.table("posts").insert(posts).execute()
@@ -129,4 +120,4 @@ if __name__ == "__main__":
     company_en = input("Company name (English): ")
     company_zh = input("Local name: ")
     ticker = input("Ticker: ")
-    asyncio.run(scrape_dcard(company_en, company_zh, ticker))
+    asyncio.run(scrape_aastocks(company_en, company_zh, ticker))
