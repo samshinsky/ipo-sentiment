@@ -542,6 +542,8 @@ with tab1:
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
                     subprocess.run([sys.executable, "collector_xiaohongshu.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+                    subprocess.run([sys.executable, "collector_discuss.py"],
+                        input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
                 if region == "KR":
                     subprocess.run([sys.executable, "collector_naver.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
