@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 from supabase import create_client
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import config
 import math
 import subprocess
@@ -556,6 +556,10 @@ with tab1:
                 subprocess.run([sys.executable, "collector_youtube.py"],
                     input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n{region}\n", text=True)
 
+            # Enforce time window — delete posts outside cutoff
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days_back)).isoformat()
+            supabase.table("posts").delete().eq("company", company_clean).lt("posted_at", cutoff).execute()
+
             with st.spinner("Scoring sentiment with AI..."):
                 from sentiment import run_sentiment
                 run_sentiment(company_clean)
@@ -564,6 +568,7 @@ with tab1:
             st.session_state['last_ticker'] = ticker
             st.session_state['last_zh'] = company_zh
             st.session_state['last_region'] = region
+            st.session_state['last_days'] = days_back
             st.rerun()
 
     if 'last_company' in st.session_state:
@@ -615,6 +620,13 @@ with tab2:
                 asyncio.run(playwright_run(bt_clean, bt_zh, bt_ticker, bt_region, sources))
                 subprocess.run([sys.executable, "collector_youtube.py"],
                     input=f"{bt_clean}\n{bt_zh or ''}\n{bt_ticker or ''}\n{bt_region}\n", text=True)
+
+            # Enforce backtest time window
+            ipo_dt = datetime.combine(bt_ipo_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+            cutoff = (ipo_dt - timedelta(days=bt_window)).isoformat()
+            supabase.table("posts").delete().eq("company", bt_clean).lt("posted_at", cutoff).execute()
+            supabase.table("posts").delete().eq("company", bt_clean).gt("posted_at", ipo_dt.isoformat()).execute()
+
             with st.spinner("Scoring sentiment..."):
                 from sentiment import run_sentiment
                 run_sentiment(bt_clean)
