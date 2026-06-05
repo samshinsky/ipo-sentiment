@@ -305,12 +305,6 @@ div[data-testid="stButton"] button:hover {
 }
 
 .stSpinner > div { border-top-color: #4ecdc4 !important; }
-
-@keyframes gaugeIn {
-    from { opacity: 0; transform: scale(0.8); }
-    to { opacity: 1; transform: scale(1); }
-}
-.gauge-animate { animation: gaugeIn 0.6s ease-out; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -425,7 +419,7 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
                     <div class="company-detail">Local Name: <span>{company_zh_val or '—'}</span></div>
                     <div class="company-detail">Region: <span>{region_val}</span></div>
                 </div>
-                <div class="gauge-animate" style="text-align:center">
+                <div style="text-align:center">
                     <div class="score-big" style="color:{score_color}">{score}<span class="score-denom">/100</span></div>
                     <div class="signal-text" style="color:{signal_color}">{signal}</div>
                 </div>
@@ -544,11 +538,15 @@ with tab1:
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
                     subprocess.run([sys.executable, "collector_discuss.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+                    subprocess.run([sys.executable, "collector_babykingdom.py"],
+                        input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+
                 if region == "KR":
                     subprocess.run([sys.executable, "collector_naver.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
                     subprocess.run([sys.executable, "collector_cafestock.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
+
                 if region == "TW":
                     subprocess.run([sys.executable, "collector_ptt.py"],
                         input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n", text=True)
