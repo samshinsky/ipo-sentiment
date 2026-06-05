@@ -6,6 +6,7 @@ import config
 import math
 import subprocess
 import sys
+import anthropic
 
 supabase = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
 
@@ -313,6 +314,32 @@ LOGO_SVG = """<svg viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000
   <polygon points="4,27 16,14 16,22 28,14 28,22 38,14 38,20 24,30 24,22 12,30 12,22" fill="#4ecdc4" opacity="0.8"/>
 </svg>"""
 
+SOURCE_PRIORITY = [
+    'telegram', 'lihkg', 'discuss', 'xiaohongshu', 'dcard', 'ptt',
+    'naver_blog', 'naver_finance', 'aastocks', 'babykingdom',
+    'mobile01', 'eastmoney', 'bilibili', '36kr', 'minkabu',
+    'yahoo_japan', 'google_trends', 'youtube'
+]
+
+def source_rank(p):
+    s = p.get('source', 'unknown')
+    try:
+        return SOURCE_PRIORITY.index(s)
+    except ValueError:
+        return 99
+
+def get_summary(text, sentiment):
+    try:
+        client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=60,
+            messages=[{"role": "user", "content": f"In one short sentence (max 15 words), summarise what this {sentiment} post is saying about the stock/IPO. If not in English, translate first. Post: {text[:300]}"}]
+        )
+        return msg.content[0].text.strip()
+    except:
+        return ""
+
 def calculate_retail_score(data):
     if not data:
         return 0
@@ -451,29 +478,34 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
         st.plotly_chart(make_gauge(score, score_color), use_container_width=True)
 
     col_bull, col_bear = st.columns(2)
+
     with col_bull:
         st.markdown('<div class="quotes-title" style="color:#4caf7d">Top Bullish Signals</div>', unsafe_allow_html=True)
         ipo_bullish = [p for p in bullish if p.get('relevance_tag') == 'ipo_related']
-        top_bullish = sorted(ipo_bullish or bullish, key=lambda x: float(x.get('sentiment_score') or 0), reverse=True)[:3]
-        for p in top_bullish:
+        pool = sorted(ipo_bullish or bullish, key=lambda x: (source_rank(x), -float(x.get('sentiment_score') or 0)))[:3]
+        for p in pool:
             text = (p.get('body') or p.get('title') or '')[:250]
             source = p.get('source', '')
             relevance = p.get('relevance_tag', '')
+            summary = get_summary(text, 'bullish')
             st.markdown(f"""<div class="quote-item" style="border-color:#4caf7d">
                 {text}
+                {f'<div style="color:#4caf7d;font-size:11px;margin-top:6px;font-style:italic">→ {summary}</div>' if summary else ''}
                 <div class="quote-source">{source} · {relevance}</div>
             </div>""", unsafe_allow_html=True)
 
     with col_bear:
         st.markdown('<div class="quotes-title" style="color:#e05c5c">Top Bearish Signals</div>', unsafe_allow_html=True)
         ipo_bearish = [p for p in bearish if p.get('relevance_tag') == 'ipo_related']
-        top_bearish = sorted(ipo_bearish or bearish, key=lambda x: float(x.get('sentiment_score') or 0))[:3]
-        for p in top_bearish:
+        pool = sorted(ipo_bearish or bearish, key=lambda x: (source_rank(x), float(x.get('sentiment_score') or 0)))[:3]
+        for p in pool:
             text = (p.get('body') or p.get('title') or '')[:250]
             source = p.get('source', '')
             relevance = p.get('relevance_tag', '')
+            summary = get_summary(text, 'bearish')
             st.markdown(f"""<div class="quote-item" style="border-color:#e05c5c">
                 {text}
+                {f'<div style="color:#e05c5c;font-size:11px;margin-top:6px;font-style:italic">→ {summary}</div>' if summary else ''}
                 <div class="quote-source">{source} · {relevance}</div>
             </div>""", unsafe_allow_html=True)
 
@@ -556,7 +588,7 @@ with tab1:
                 subprocess.run([sys.executable, "collector_youtube.py"],
                     input=f"{company_clean}\n{company_zh or ''}\n{ticker or ''}\n{region}\n", text=True)
 
-            # Enforce time window — delete posts outside cutoff
+            # Enforce time window
             cutoff = (datetime.now(timezone.utc) - timedelta(days=days_back)).isoformat()
             supabase.table("posts").delete().eq("company", company_clean).lt("posted_at", cutoff).execute()
 
