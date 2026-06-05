@@ -343,6 +343,9 @@ def get_summary(text, sentiment):
 def calculate_retail_score(data):
     if not data:
         return 0
+    data = [p for p in data if p.get('relevance_tag') != 'news_article']
+    if not data:
+        return 0
     total_posts = len(data)
     volume_score = min(30, math.log1p(total_posts) * 5)
     weighted_sentiment = 0
@@ -431,6 +434,7 @@ def display_results(scored_data, company_name, ticker_val, company_zh_val, regio
     signal, signal_color = get_signal(score)
     score_color = get_score_color(score)
 
+    scored_data = [p for p in scored_data if p.get('relevance_tag') != 'news_article']
     bullish = [p for p in scored_data if p['sentiment_label'] == 'bullish']
     bearish = [p for p in scored_data if p['sentiment_label'] == 'bearish']
     neutral = [p for p in scored_data if p['sentiment_label'] == 'neutral']
